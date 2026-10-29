@@ -2,5 +2,7 @@
   "name": "Temple to Ayurveda",
   "description": "A comprehensive ecosystem transforming temple and household ritual waste into renewable resources via AI, IoT, and community engagement.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

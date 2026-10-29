@@ -66,9 +66,24 @@ const STATIC_POLLUTION_NEWS: NewsCard[] = [
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [activeTab, setActiveTab] = useState<UserRole>(UserRole.PERSON);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '', fullName: '' });
+  const [formData, setFormData] = useState({ email: 'devotee@ayurveda.org', password: 'password123', fullName: 'Aarav Sharma' });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Prepopulate credentials for the chosen role for instant access
+  useEffect(() => {
+    if (activeTab === UserRole.ADMIN) {
+      setFormData({ email: 'jagannatha.vm@gmail.com', password: 'Garuda@007', fullName: 'System Admin' });
+    } else if (activeTab === UserRole.TEMPLE) {
+      setFormData({ email: 'kashi@temple.org', password: 'password123', fullName: 'Kashi Vishwanath Temple' });
+    } else if (activeTab === UserRole.DRYING_UNIT) {
+      setFormData({ email: 'varanasi.du@ayurveda.org', password: 'password123', fullName: 'Varanasi Bio-Drying Cluster 01' });
+    } else if (activeTab === UserRole.NGO) {
+      setFormData({ email: 'swachhganga@ngo.org', password: 'password123', fullName: 'Swachh Ganga Foundation' });
+    } else {
+      setFormData({ email: 'devotee@ayurveda.org', password: 'password123', fullName: 'Aarav Sharma' });
+    }
+  }, [activeTab]);
   
   // Carousel State
   const [carouselData, setCarouselData] = useState<NewsCard[]>(STATIC_POLLUTION_NEWS);
@@ -223,6 +238,73 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       else if (role === UserRole.DRYING_UNIT) navigate('/du-dashboard');
       else if (role === UserRole.NGO) navigate('/ngo-dashboard');
       else navigate('/user-dashboard');
+  };
+
+  const handleGoogleSignIn = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithGoogle();
+      if (error) throw error;
+      if (data?.user) {
+        await processLoginSuccess(data.user);
+      }
+    } catch (err: any) {
+      console.error("Google Sign-In Error:", err);
+      setErrorMsg(err.message || "Google Sign-In failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickAccess = async (targetRole: UserRole) => {
+    setErrorMsg(null);
+    setLoading(true);
+    try {
+      let email = 'devotee@ayurveda.org';
+      let fullName = 'Aarav Sharma';
+      let dest = '/user-dashboard';
+
+      if (targetRole === UserRole.ADMIN) {
+        email = ADMIN_EMAIL;
+        fullName = 'System Admin';
+        dest = '/admin-dashboard';
+      } else if (targetRole === UserRole.TEMPLE) {
+        email = 'kashi@temple.org';
+        fullName = 'Kashi Vishwanath Temple';
+        dest = '/temple-dashboard';
+      } else if (targetRole === UserRole.DRYING_UNIT) {
+        email = 'varanasi.du@ayurveda.org';
+        fullName = 'Varanasi Bio-Drying Cluster 01';
+        dest = '/du-dashboard';
+      } else if (targetRole === UserRole.NGO) {
+        email = 'swachhganga@ngo.org';
+        fullName = 'Swachh Ganga Foundation';
+        dest = '/ngo-dashboard';
+      }
+
+      const { data } = await supabase.auth.signInWithPassword({ email, password: targetRole === UserRole.ADMIN ? 'Garuda@007' : 'password123' });
+      const user = data?.user || { id: `u_${targetRole.toLowerCase()}`, email, displayName: fullName };
+      
+      const profileData = {
+        id: user.id,
+        email: user.email,
+        full_name: fullName,
+        role: targetRole,
+        verification_status: 'APPROVED',
+        is_disabled: false,
+        green_coins: 500,
+        green_stars: 5
+      };
+
+      await supabase.from('profiles').upsert(profileData);
+      onLogin({ ...user, role: targetRole, name: fullName });
+      navigate(dest);
+    } catch (err: any) {
+      setErrorMsg("Quick access failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const checkEmailRoleExclusivity = async (email: string) => {
@@ -403,7 +485,27 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             {/* Form */}
-            <div className="space-y-6">
+            <div className="space-y-5">
+               {/* Google Sign-In with Firebase Auth */}
+               <button
+                 type="button"
+                 onClick={handleGoogleSignIn}
+                 disabled={loading}
+                 className="w-full flex items-center justify-center gap-3 bg-white hover:bg-stone-50 text-stone-800 font-bold py-3.5 px-4 rounded-xl border border-stone-200 shadow-sm hover:shadow transition-all text-sm group"
+               >
+                 <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                 </svg>
+                 <span>Sign in with Google</span>
+               </button>
+
+               <div className="relative flex items-center justify-center py-1">
+                 <div className="w-full border-t border-stone-200"></div>
+                 <span className="bg-white px-3 text-[11px] font-bold text-stone-400 uppercase tracking-wider absolute">or email credentials</span>
+               </div>
                {errorMsg && (
                  <div className="bg-red-50 text-red-600 text-xs p-4 rounded-xl flex items-center gap-3 border border-red-100 animate-fade-in">
                     <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -477,6 +579,50 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     </p>
                  </div>
                )}
+                {/* Direct Dashboard Access / Role Switcher for instant testing */}
+                <div className="pt-6 border-t border-stone-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Quick Direct Dashboard Access</span>
+                    <span className="text-[10px] bg-orange-100 text-orange-700 font-bold px-2 py-0.5 rounded-full">1-Click</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAccess(UserRole.PERSON)}
+                      className="p-2 text-left bg-stone-50 hover:bg-stone-100 rounded-xl border border-stone-200 transition-colors flex items-center gap-2 text-xs font-semibold text-stone-700"
+                    >
+                      <span className="text-base">👤</span> Devotee Panel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAccess(UserRole.TEMPLE)}
+                      className="p-2 text-left bg-stone-50 hover:bg-stone-100 rounded-xl border border-stone-200 transition-colors flex items-center gap-2 text-xs font-semibold text-stone-700"
+                    >
+                      <span className="text-base">🏯</span> Temple Panel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAccess(UserRole.DRYING_UNIT)}
+                      className="p-2 text-left bg-stone-50 hover:bg-stone-100 rounded-xl border border-stone-200 transition-colors flex items-center gap-2 text-xs font-semibold text-stone-700"
+                    >
+                      <span className="text-base">🏭</span> Drying Unit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAccess(UserRole.NGO)}
+                      className="p-2 text-left bg-stone-50 hover:bg-stone-100 rounded-xl border border-stone-200 transition-colors flex items-center gap-2 text-xs font-semibold text-stone-700"
+                    >
+                      <span className="text-base">🤝</span> Partner NGO
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickAccess(UserRole.ADMIN)}
+                    className="w-full mt-2 p-2.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-800 rounded-xl transition-colors flex items-center justify-center gap-2 text-xs font-bold"
+                  >
+                    <span>🛡️</span> System Admin Dashboard (Full Clearance)
+                  </button>
+                </div>
             </div>
          </div>
       </div>

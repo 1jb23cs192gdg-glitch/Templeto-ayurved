@@ -3,13 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { BowArrowLogo } from '../constants';
 import { supabase } from '../lib/supabaseClient';
-import { GoogleGenAI } from "@google/genai";
-
-declare var process: {
-  env: {
-    API_KEY: string;
-  };
-};
+import { sendGeminiGrounding } from '../lib/geminiClient';
 
 interface TrackDriverProps {
   embeddedId?: string; // Optional prop for when used inside Dashboard
@@ -26,6 +20,7 @@ const TrackDriver: React.FC<TrackDriverProps> = ({ embeddedId }) => {
   const [vehicleDetails, setVehicleDetails] = useState<any>(null);
   const [dots, setDots] = useState('');
   const [isGrounding, setIsGrounding] = useState(false);
+  const [groundedMapUri, setGroundedMapUri] = useState<string | null>(null);
 
   // Animation for the "Live" indicator
   useEffect(() => {
@@ -83,8 +78,6 @@ const TrackDriver: React.FC<TrackDriverProps> = ({ embeddedId }) => {
       if (!rawLocation) return;
       setIsGrounding(true);
       try {
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-          
           let prompt = `Locate "${rawLocation}" precisely in India using Google Maps data. Return the most accurate formatted address for a map query.`;
           
           if (destination) {
@@ -99,31 +92,23 @@ const TrackDriver: React.FC<TrackDriverProps> = ({ embeddedId }) => {
               "Verified at [Precise Address]. [Distance] km to destination ([Time] away)."`;
           }
 
-          const response = await ai.models.generateContent({
-              model: 'gemini-2.5-flash',
-              contents: prompt,
-              config: { tools: [{ googleMaps: {} }] },
-          });
-          
+          const response = await sendGeminiGrounding(prompt, 'maps');
           const resultText = response.text?.trim();
           
           if (resultText) {
-              // If we have a destination, the result is complex (Insight), otherwise it's just an address
               if (destination) {
-                  // Heuristic: If it contains "Verified at", use the full text as insight
-                  // and try to extract the address part for the map
                   setRouteInsight(resultText);
-                  
-                  // Simple extraction attempt for map pin (everything before first period or comma if plausible)
-                  // This is a basic fallback; usually the whole text is too long for a map query.
-                  // For map query, we might stick to raw location or try to extract.
-                  // Let's use the Raw Location grounded by the first sentence if possible.
                   const firstPart = resultText.split('.')[0].replace('Verified at', '').trim();
                   setGroundedLocation(firstPart.length > 5 ? firstPart : rawLocation);
               } else {
                   setGroundedLocation(resultText);
                   setRouteInsight(null);
               }
+          }
+
+          // Extract verified Google Maps link
+          if (response.links && response.links.length > 0) {
+              setGroundedMapUri(response.links[0].uri);
           }
       } catch (error) {
           console.error("Grounding failed:", error);
@@ -232,6 +217,18 @@ const TrackDriver: React.FC<TrackDriverProps> = ({ embeddedId }) => {
               </div>
            </div>
 
+           <div className="flex gap-2">
+             <a 
+               href={groundedMapUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`}
+               target="_blank"
+               rel="noreferrer"
+               className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-center text-xs flex items-center justify-center gap-1.5 shadow-md transition-all"
+             >
+               <span>📍</span>
+               <span>Open in Google Maps ↗</span>
+             </a>
+           </div>
+
            {!embeddedId && (
              <button 
                className="w-full py-4 bg-gradient-to-r from-orange-600 to-red-600 rounded-xl font-bold text-white shadow-lg shadow-orange-900/50 hover:scale-[1.02] transition-transform active:scale-95"
@@ -242,7 +239,7 @@ const TrackDriver: React.FC<TrackDriverProps> = ({ embeddedId }) => {
            )}
 
            <p className="text-center text-[10px] text-stone-500">
-             Powered by Gemini Maps Grounding
+             Verified by Google Maps Grounding via gemini-3.8-flash
            </p>
         </div>
 

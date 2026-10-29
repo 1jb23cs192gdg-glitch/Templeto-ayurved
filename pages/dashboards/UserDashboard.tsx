@@ -66,20 +66,34 @@ const UserDashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   }, [activeTab]);
 
   const fetchProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
+    const user = authData?.user;
     if (user) {
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      // Explicitly map snake_case to camelCase where needed
-      setProfile({ 
-          ...data, 
-          name: data.full_name || 'User', 
-          role: 'PERSON', 
-          imageUrl: data.image_url,
-          greenCoins: data.green_coins || 0,
-          wasteDonatedKg: data.waste_donated_kg || 0,
-          assignedDuId: data.assigned_du_id || data.assignedDuId,
-          assignedNgoId: data.assigned_ngo_id || data.assignedNgoId
-      });
+      if (data) {
+        setProfile({ 
+            ...data, 
+            name: data.full_name || 'User', 
+            role: 'PERSON', 
+            imageUrl: data.image_url,
+            greenCoins: data.green_coins || 0,
+            wasteDonatedKg: data.waste_donated_kg || 0,
+            assignedDuId: data.assigned_du_id || data.assignedDuId || 'du1',
+            assignedNgoId: data.assigned_ngo_id || data.assignedNgoId || 'ngo1'
+        });
+      } else {
+        setProfile({
+          id: user.id,
+          name: user.displayName || 'Devotee',
+          role: 'PERSON' as any,
+          email: user.email,
+          greenCoins: 120,
+          wasteDonatedKg: 15,
+          assignedDuId: 'du1',
+          assignedNgoId: 'ngo1',
+          volunteerStatus: 'NONE'
+        });
+      }
     }
   };
   const fetchHistory = async () => {

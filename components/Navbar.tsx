@@ -30,16 +30,6 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
     setIsOpen(false);
   };
 
-  const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'Training', path: '/training' },
-    { name: 'Rankings', path: '/rankings' },
-    { name: 'Smart Scan', path: '/scan' },
-    { name: 'Eco-Shop', path: '/shop' },
-    { name: 'About', path: '/about' },
-    { name: 'Connect', path: '/connect' },
-  ];
-
   const getDashboardLink = () => {
     switch (user?.role) {
       case UserRole.ADMIN: return '/admin-dashboard';
@@ -47,9 +37,19 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
       case UserRole.DRYING_UNIT: return '/du-dashboard';
       case UserRole.NGO: return '/ngo-dashboard';
       case UserRole.PERSON: return '/user-dashboard';
-      default: return '/';
+      default: return '/login';
     }
   };
+
+  const navLinks = [
+    { name: 'Home', path: '/' },
+    { name: 'Dashboards', path: user ? getDashboardLink() : '/login' },
+    { name: 'Rankings', path: '/rankings' },
+    { name: 'Smart Scan', path: '/scan' },
+    { name: 'Eco-Shop', path: '/shop' },
+    { name: 'Training', path: '/training' },
+    { name: 'Connect', path: '/connect' },
+  ];
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-lg py-2' : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md py-4 shadow-sm'}`}>

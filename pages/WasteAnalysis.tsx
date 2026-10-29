@@ -1,12 +1,6 @@
 
 import React, { useState } from 'react';
-import { GoogleGenAI } from "@google/genai";
-
-declare var process: {
-  env: {
-    API_KEY: string;
-  };
-};
+import { sendGeminiWasteAnalysis } from '../lib/geminiClient';
 
 const WasteAnalysis = () => {
   const [image, setImage] = useState<string | null>(null);
@@ -33,9 +27,7 @@ const WasteAnalysis = () => {
       const base64Data = image.split(',')[1];
       const mimeType = image.split(';')[0].split(':')[1];
 
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
-      const prompt = `
+      const promptText = `
         Analyze this image of temple/ritual waste. 
         Identify the items (e.g., Flowers, Coconuts, Plastic, Incense sticks, Cloth, Ash, Paper).
         Estimate the composition percentage.
@@ -61,22 +53,9 @@ const WasteAnalysis = () => {
         }
       `;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: {
-          parts: [
-            { inlineData: { mimeType: mimeType, data: base64Data } },
-            { text: prompt }
-          ]
-        },
-        config: {
-          responseMimeType: 'application/json'
-        }
-      });
-
-      const text = response.text;
-      if (text) {
-        setAnalysis(JSON.parse(text));
+      const result = await sendGeminiWasteAnalysis(base64Data, mimeType, promptText);
+      if (result) {
+        setAnalysis(result);
       }
 
     } catch (error) {

@@ -2,13 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Temple } from '../types';
-import { GoogleGenAI } from "@google/genai";
-
-declare var process: {
-  env: {
-    API_KEY: string;
-  };
-};
+import { sendGeminiGrounding } from '../lib/geminiClient';
 
 const Rankings = () => {
   const [temples, setTemples] = useState<Temple[]>([]);
@@ -22,6 +16,7 @@ const Rankings = () => {
 
   // Maps Grounding State
   const [verifiedLocations, setVerifiedLocations] = useState<Record<string, string>>({});
+  const [verifiedLinks, setVerifiedLinks] = useState<Record<string, { uri: string; title: string }>>({});
   const [verifying, setVerifying] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -65,22 +60,27 @@ const Rankings = () => {
   const handleVerifyLocation = async (temple: Temple) => {
     setVerifying(prev => ({ ...prev, [temple.id]: true }));
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      // Use Maps Grounding to get precise location
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `Find the exact address and location of ${temple.name} in ${temple.location || 'India'}. Return only the precise address formatted for Google Maps query.`,
-        config: {
-          tools: [{ googleMaps: {} }],
-        }
-      });
+      const prompt = `Find the official precise location, district, and exact address of ${temple.name} in ${temple.location || 'India'}. Include landmark context for pilgrim navigation.`;
+      const response = await sendGeminiGrounding(prompt, 'maps');
 
       const groundedAddress = response.text?.trim();
       if (groundedAddress) {
         setVerifiedLocations(prev => ({ ...prev, [temple.id]: groundedAddress }));
       }
+
+      // Extract verified links
+      if (response.links && response.links.length > 0) {
+        const topLink = response.links[0];
+        setVerifiedLinks(prev => ({
+          ...prev,
+          [temple.id]: {
+            uri: topLink.uri,
+            title: topLink.title || `${temple.name} on Google Maps`
+          }
+        }));
+      }
     } catch (error) {
-      console.error("Maps Grounding failed:", error);
+      console.error("Google Maps Grounding failed:", error);
     } finally {
       setVerifying(prev => ({ ...prev, [temple.id]: false }));
     }
@@ -174,13 +174,22 @@ const Rankings = () => {
                       )}
                   </div>
                   
-                  <div className="mt-6 flex gap-4">
+                  <div className="mt-6 flex flex-wrap gap-3">
                       <button 
                           onClick={() => handleViewPhotos(temple.id, temple.name, temple.imageUrl)}
-                          className="flex-1 bg-stone-800 text-white py-2 rounded-xl text-sm font-bold hover:bg-black transition-colors"
+                          className="flex-1 min-w-[140px] bg-stone-800 text-white py-2.5 px-4 rounded-xl text-sm font-bold hover:bg-black transition-colors"
                       >
                           View Proof Gallery
                       </button>
+                      <a 
+                          href={verifiedLinks[temple.id]?.uri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapLocation)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
+                      >
+                          <span>📍</span>
+                          <span>{verifiedLinks[temple.id] ? 'Open Verified Map ↗' : 'Google Maps ↗'}</span>
+                      </a>
                   </div>
                 </div>
 

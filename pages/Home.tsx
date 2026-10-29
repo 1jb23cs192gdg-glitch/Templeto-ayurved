@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import { supabase } from '../lib/supabaseClient';
 import { FlashUpdate } from '../types';
 import { Link, useLocation } from 'react-router-dom';
+import LiveEcoSearchGrounding from '../components/LiveEcoSearchGrounding';
 
 const Home = () => {
   const [updates, setUpdates] = useState<FlashUpdate[]>([]);
@@ -248,6 +249,11 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Live Google Search Grounded Eco-Intelligence & News */}
+      <div className="max-w-7xl mx-auto px-4">
+        <LiveEcoSearchGrounding />
+      </div>
 
       {/* Video Section */}
       <section className="py-24 bg-stone-900 text-white relative overflow-hidden">

@@ -6,14 +6,8 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { GoogleGenAI } from "@google/genai";
-import TrackDriver from '../TrackDriver'; 
-
-declare var process: {
-  env: {
-    API_KEY: string;
-  };
-};
+import { sendGeminiGrounding } from '../../lib/geminiClient';
+import TrackDriver from '../TrackDriver';
 
 interface DashboardProps { onLogout?: () => void; }
 
@@ -63,9 +57,18 @@ const DryingUnitDashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     const fetchUser = async () => {
       const { data: authData } = await supabase.auth.getUser();
       if (authData?.user) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', authData.user.id).single();
+        let { data: profile } = await supabase.from('profiles').select('*').eq('id', authData.user.id).single();
+        if (!profile) {
+          const { data: duProfiles } = await supabase.from('profiles').select('*').eq('role', 'DRYING_UNIT');
+          profile = duProfiles?.[0] || {
+            id: authData.user.id,
+            full_name: 'Varanasi Bio-Drying Cluster 01',
+            role: 'DRYING_UNIT',
+            email: authData.user.email
+          };
+        }
         if (profile) {
-            const userObj = { ...profile, name: profile.full_name, role: 'DRYING_UNIT' };
+            const userObj = { ...profile, name: profile.full_name || 'Bio-Drying Cluster 01', role: 'DRYING_UNIT' };
             setCurrentUser(userObj);
         }
       }
@@ -376,19 +379,13 @@ const DryingUnitDashboard: React.FC<DashboardProps> = ({ onLogout }) => {
       if (!location) return;
       setLoadingLocations(prev => ({...prev, [vehicleId]: true}));
       try {
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-          
           let prompt = `Locate "${location}" precisely in India using Google Maps data. Return the precise address formatted for a map query.`;
           
           if (destination) {
               prompt += ` Context: Vehicle is traveling to "${destination}".`;
           }
 
-          const response = await ai.models.generateContent({
-              model: 'gemini-2.5-flash',
-              contents: prompt,
-              config: { tools: [{ googleMaps: {} }] },
-          });
+          const response = await sendGeminiGrounding(prompt, 'maps');
           let groundedLocation = response.text?.trim() || location;
           setVehicleLocations(prev => ({...prev, [vehicleId]: groundedLocation})); 
       } catch (error) {
@@ -427,8 +424,8 @@ const DryingUnitDashboard: React.FC<DashboardProps> = ({ onLogout }) => {
       }));
   };
 
-  const templeTotalWaste = assignedTemples.reduce((sum, t) => sum + (Number(t.wasteDonatedKg) || 0), 0);
-  const userTotalWaste = assignedUsers.reduce((sum, u) => sum + (Number(u.waste_donated_kg) || 0), 0);
+  const templeTotalWaste = (assignedTemples || []).reduce((sum, t) => sum + (Number(t?.wasteDonatedKg) || 0), 0);
+  const userTotalWaste = (assignedUsers || []).reduce((sum, u) => sum + (Number(u?.waste_donated_kg) || 0), 0);
   
   const sourceDistribution = [
       { name: 'Temples', value: templeTotalWaste, color: '#f97316' },

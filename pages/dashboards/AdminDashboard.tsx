@@ -35,13 +35,17 @@ const AdminDashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   }, []);
 
   const fetchStats = async () => {
-    const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'PERSON');
-    const { count: templeCount } = await supabase.from('temples').select('*', { count: 'exact', head: true });
+    const { count: userCount, data: users } = await supabase.from('profiles').select('*', { count: 'exact' }).eq('role', 'PERSON');
+    const { count: templeCount, data: temples } = await supabase.from('temples').select('*', { count: 'exact' });
     
     const { data: templeData } = await supabase.from('temples').select('waste_donated_kg');
-    const totalWaste = templeData ? templeData.reduce((acc: number, curr: any) => acc + (curr.waste_donated_kg || 0), 0) : 0;
+    const totalWaste = templeData ? templeData.reduce((acc: number, curr: any) => acc + (Number(curr?.waste_donated_kg) || 0), 0) : 0;
 
-    setStats({ totalUsers: userCount || 0, totalTemples: templeCount || 0, totalWaste });
+    setStats({ 
+      totalUsers: userCount ?? (users?.length || 0), 
+      totalTemples: templeCount ?? (temples?.length || 0), 
+      totalWaste 
+    });
   };
 
   const fetchPendingVerifications = async () => {

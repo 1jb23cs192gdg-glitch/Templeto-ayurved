@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Connection health check for startup verification
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return (
+        request.auth != null && (
+          request.auth.token.email.matches('(?i)jagannatha\\.vm@gmail\\.com') ||
+          (exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.role == 'ADMIN')
+        )
+      );
+    }
+
+    match /profiles/{profileId} {
+      allow read, write: if true;
+    }
+
+    match /temples/{templeId} {
+      allow read, write: if true;
+    }
+
+    match /pickup_requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    match /inventory/{itemId} {
+      allow read, write: if true;
+    }
+
+    match /vehicles/{vehicleId} {
+      allow read, write: if true;
+    }
+
+    match /query_tickets/{ticketId} {
+      allow read, write: if true;
+    }
+
+    match /stock_requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    match /volunteer_requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    match /volunteer_duties/{dutyId} {
+      allow read, write: if true;
+    }
+
+    match /temple_waste_logs/{logId} {
+      allow read, write: if true;
+    }
+
+    match /temple_photos/{photoId} {
+      allow read, write: if true;
+    }
+
+    match /flash_updates/{updateId} {
+      allow read, write: if true;
+    }
+
+    match /app_settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    match /ratings/{ratingId} {
+      allow read, write: if true;
+    }
+
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -23,9 +23,24 @@ const NgoDashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     const fetchUser = async () => {
       const { data: authData } = await supabase.auth.getUser();
       if (authData?.user) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', authData.user.id).single();
+        let { data: profile } = await supabase.from('profiles').select('*').eq('id', authData.user.id).single();
+        if (!profile) {
+          const { data: ngoProfiles } = await supabase.from('profiles').select('*').eq('role', 'NGO');
+          profile = ngoProfiles?.[0] || {
+            id: authData.user.id,
+            full_name: 'Swachh Ganga Foundation',
+            role: 'NGO',
+            email: authData.user.email,
+            assigned_du_id: 'du1'
+          };
+        }
         if (profile) {
-            setCurrentUser({ ...profile, name: profile.full_name, role: 'NGO' });
+            setCurrentUser({ 
+              ...profile, 
+              name: profile.full_name || 'Partner NGO', 
+              role: 'NGO',
+              assignedDuId: profile.assigned_du_id || profile.assignedDuId || 'du1'
+            });
         }
       }
     };

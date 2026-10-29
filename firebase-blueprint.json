@@ -1,0 +1,241 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "Profile",
+      "description": "User profile with role, contact info, and sustainability credits",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "full_name": { "type": "string" },
+        "role": { "type": "string", "enum": ["ADMIN", "TEMPLE", "DRYING_UNIT", "NGO", "PERSON", "GUEST"] },
+        "green_coins": { "type": "number" },
+        "green_stars": { "type": "number" },
+        "waste_donated_kg": { "type": "number" },
+        "volunteer_status": { "type": "string", "enum": ["NONE", "PENDING", "APPROVED", "REJECTED"] },
+        "verification_status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "is_disabled": { "type": "boolean" },
+        "assigned_du_id": { "type": "string" },
+        "assigned_ngo_id": { "type": "string" },
+        "contact": { "type": "string" },
+        "address": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "email", "role"]
+    },
+    "Temple": {
+      "title": "Temple",
+      "description": "Registered temple offering sacred floral and ritual waste for bio-processing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "waste_donated_kg": { "type": "number" },
+        "green_stars": { "type": "number" },
+        "image_url": { "type": "string" },
+        "description": { "type": "string" },
+        "du_id": { "type": "string" },
+        "ngo_id": { "type": "string" },
+        "owner_id": { "type": "string" },
+        "address": { "type": "string" },
+        "timings": { "type": "string" }
+      },
+      "required": ["id", "name", "location"]
+    },
+    "PickupRequest": {
+      "title": "PickupRequest",
+      "description": "Pickup order for sacred floral waste scheduled by temples or households",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "requester_id": { "type": "string" },
+        "requester_type": { "type": "string", "enum": ["TEMPLE", "USER"] },
+        "ngo_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "ACCEPTED", "IN_PROGRESS", "LOADED", "COMPLETED", "REJECTED"] },
+        "scheduled_date": { "type": "string" },
+        "time_slot": { "type": "string" },
+        "estimated_weight": { "type": "number" },
+        "actual_weight": { "type": "number" },
+        "waste_type": { "type": "string" },
+        "driver_name": { "type": "string" },
+        "vehicle_no": { "type": "string" },
+        "address": { "type": "string" },
+        "image_url": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "requester_id", "status", "waste_type"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Processed bio-products produced by drying units (rose petals, agarbatti, compost)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ngo_id": { "type": "string" },
+        "name": { "type": "string" },
+        "stock": { "type": "number" },
+        "price_coins": { "type": "number" },
+        "last_updated": { "type": "string" }
+      },
+      "required": ["id", "name", "stock"]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Logistics and fleet vehicles managed by drying units",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ngo_id": { "type": "string" },
+        "driver_name": { "type": "string" },
+        "vehicle_no": { "type": "string" },
+        "phone": { "type": "string" },
+        "license": { "type": "string" },
+        "status": { "type": "string", "enum": ["IDLE", "EN_ROUTE", "LOADING", "MAINTENANCE"] },
+        "current_location": { "type": "string" },
+        "destination": { "type": "string" }
+      },
+      "required": ["id", "driver_name", "vehicle_no", "status"]
+    },
+    "QueryTicket": {
+      "title": "QueryTicket",
+      "description": "Communication inquiries between NGOs, Drying Units, and Admins",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "from_id": { "type": "string" },
+        "to_id": { "type": "string" },
+        "sender_role": { "type": "string" },
+        "sender_email": { "type": "string" },
+        "sender_name": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "response": { "type": "string" },
+        "status": { "type": "string", "enum": ["OPEN", "CLOSED"] },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "from_id", "to_id", "subject", "message"]
+    },
+    "StockRequest": {
+      "title": "StockRequest",
+      "description": "Inventory distribution requests from NGOs to Drying Units",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ngo_id": { "type": "string" },
+        "du_id": { "type": "string" },
+        "item_name": { "type": "string" },
+        "quantity": { "type": "number" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "ngo_id", "du_id", "item_name", "quantity"]
+    },
+    "VolunteerRequest": {
+      "title": "VolunteerRequest",
+      "description": "Volunteer application to assist with temple flower segregation and logistics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "full_name": { "type": "string" },
+        "contact": { "type": "string" },
+        "taluk": { "type": "string" },
+        "district": { "type": "string" },
+        "state": { "type": "string" },
+        "id_proof_url": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "assigned_du_id": { "type": "string" },
+        "assignment_status": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "user_id", "full_name", "status"]
+    },
+    "VolunteerDuty": {
+      "title": "VolunteerDuty",
+      "description": "Assigned duties for volunteers at temple collection spots",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "volunteer_id": { "type": "string" },
+        "du_id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "IN_PROGRESS", "COMPLETION_REQUESTED", "COMPLETED", "REJECTED"] },
+        "created_at": { "type": "string" },
+        "completed_at": { "type": "string" }
+      },
+      "required": ["id", "volunteer_id", "du_id", "title", "status"]
+    },
+    "FlashUpdate": {
+      "title": "FlashUpdate",
+      "description": "System alerts, air quality pollution bulletins, and announcements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "type": { "type": "string", "enum": ["NEWS", "ALERT", "MILESTONE", "VIDEO_CONFIG"] },
+        "audience": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "type"]
+    },
+    "AppSetting": {
+      "title": "AppSetting",
+      "description": "Application configuration such as green coin reward rates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "coin_rate": { "type": "number" }
+      },
+      "required": ["id", "coin_rate"]
+    }
+  },
+  "firestore": {
+    "/profiles/{profileId}": {
+      "schema": { "$ref": "#/entities/Profile" },
+      "description": "User and organizational profiles"
+    },
+    "/temples/{templeId}": {
+      "schema": { "$ref": "#/entities/Temple" },
+      "description": "Sanctuary and temple records"
+    },
+    "/pickup_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/PickupRequest" },
+      "description": "Logistics floral pickup requests"
+    },
+    "/inventory/{itemId}": {
+      "schema": { "$ref": "#/entities/InventoryItem" },
+      "description": "Drying unit bio-product catalog"
+    },
+    "/vehicles/{vehicleId}": {
+      "schema": { "$ref": "#/entities/Vehicle" },
+      "description": "Vehicle fleet tracking"
+    },
+    "/query_tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/QueryTicket" },
+      "description": "Support tickets and inter-unit communications"
+    },
+    "/stock_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/StockRequest" },
+      "description": "Stock fulfillment requests"
+    },
+    "/volunteer_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/VolunteerRequest" },
+      "description": "Volunteer registry applications"
+    },
+    "/volunteer_duties/{dutyId}": {
+      "schema": { "$ref": "#/entities/VolunteerDuty" },
+      "description": "Task assignments for verified volunteers"
+    },
+    "/flash_updates/{updateId}": {
+      "schema": { "$ref": "#/entities/FlashUpdate" },
+      "description": "News feeds and live pollution notifications"
+    },
+    "/app_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/AppSetting" },
+      "description": "Global application configuration"
+    }
+  }
+}

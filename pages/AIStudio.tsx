@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import { GoogleGenAI } from "@google/genai";
-
-declare var process: {
-  env: {
-    API_KEY: string;
-  };
-};
+import { sendGeminiGenerateImage } from '../lib/geminiClient';
 
 const AIStudio = () => {
   const [prompt, setPrompt] = useState('');
@@ -18,29 +12,9 @@ const AIStudio = () => {
     setImage(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
-      // Using Image generation model
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-image-preview',
-        contents: {
-          parts: [{ text: prompt }],
-        },
-        config: {
-          imageConfig: {
-            aspectRatio: "1:1",
-            imageSize: "1K"
-          }
-        }
-      });
-
-      if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData) {
-            const base64EncodeString = part.inlineData.data;
-            setImage(`data:image/png;base64,${base64EncodeString}`);
-          }
-        }
+      const imageUrl = await sendGeminiGenerateImage(prompt);
+      if (imageUrl) {
+        setImage(imageUrl);
       } else {
         alert("No image generated. Please try a different prompt.");
       }
